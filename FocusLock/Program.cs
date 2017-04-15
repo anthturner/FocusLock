@@ -31,7 +31,7 @@ namespace FocusLock
             // Initialize Tray Icon
             trayIcon = new NotifyIcon()
             {
-                Icon = SystemIcons.Asterisk,
+                Icon = Icon.FromHandle(Properties.Resources.icon.GetHicon()),
                 Text = "FocusLock",
                 ContextMenu = new ContextMenu(new MenuItem[] {
                 new MenuItem("Exit", Exit)
@@ -39,7 +39,10 @@ namespace FocusLock
                 Visible = true
             };
 
-            _hook = new GlobalKeyboardHook(() => _lastKeyDown = DateTime.Now);
+            _hook = new GlobalKeyboardHook(() => {
+                _lastKeyDown = DateTime.Now;
+            });
+            _hook.Start();
             IntPtr m_hhook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, new WinEventDelegate(WinEventProc), 0, 0, WINEVENT_OUTOFCONTEXT);
         }
 
@@ -62,11 +65,10 @@ namespace FocusLock
 
         public void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
         {
-            if ((DateTime.Now - _lastKeyDown).Milliseconds < THROTTLE_RELEASE_TIME_IN_MS)
+            if ((DateTime.Now - _lastKeyDown).TotalMilliseconds < THROTTLE_RELEASE_TIME_IN_MS)
             {
                 if (hwnd != _lastHwnd)
                     SetForegroundWindow(_lastHwnd);
-                return;
             }
             else
                 _lastHwnd = hwnd;
